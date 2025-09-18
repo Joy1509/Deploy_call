@@ -17,7 +17,7 @@ const Navbar = () => {
         <div className="flex justify-between items-center h-16">
           <div className="flex items-center space-x-8">
             <Link to="/" className="text-2xl font-bold text-blue-600">
-              CallFlow
+              Deep Infotech
             </Link>
             
             <div className="flex space-x-4">

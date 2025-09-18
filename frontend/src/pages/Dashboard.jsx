@@ -34,8 +34,8 @@ const Dashboard = () => {
     <div className="max-w-7xl mx-auto">
       <div className="flex justify-between items-center mb-6">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Dashboard</h1>
-          <p className="text-gray-600">Welcome back, {user?.username}</p>
+          <h3 className="text-3xl font-bold text-blue-700">Welcome Back! {user?.username}</h3>
+      
         </div>
         <button
           onClick={() => setShowAddForm(true)}

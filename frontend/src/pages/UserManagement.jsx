@@ -9,7 +9,7 @@ const UserManagement = () => {
     role: 'USER'
   });
   
-  const { users, fetchUsers, createUser, user } = useAuthStore();
+  const { users, fetchUsers, createUser, updateUserRole, user } = useAuthStore();
 
   useEffect(() => {
     fetchUsers();
@@ -66,13 +66,32 @@ const UserManagement = () => {
                   {u.username}
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap">
-                  <span className={`px-2 py-1 text-xs font-medium rounded-full ${
-                    u.role === 'HOST' ? 'bg-purple-100 text-purple-800' :
-                    u.role === 'ADMIN' ? 'bg-blue-100 text-blue-800' :
-                    'bg-green-100 text-green-800'
-                  }`}>
-                    {u.role}
-                  </span>
+                  {user?.role === 'HOST' ? (
+                    <select
+                      value={u.role}
+                      onChange={(e) => {
+                        const newRole = e.target.value;
+                        if (window.confirm(`Do you want to change ${u.username}'s role to ${newRole}?`)) {
+                          updateUserRole(u.id, newRole);
+                        } else {
+                          e.target.value = u.role;
+                        }
+                      }}
+                      className="px-2 py-1 text-xs font-medium rounded border"
+                    >
+                      <option value="USER">USER</option>
+                      <option value="ADMIN">ADMIN</option>
+                      <option value="HOST">HOST</option>
+                    </select>
+                  ) : (
+                    <span className={`px-2 py-1 text-xs font-medium rounded-full ${
+                      u.role === 'HOST' ? 'bg-purple-100 text-purple-800' :
+                      u.role === 'ADMIN' ? 'bg-blue-100 text-blue-800' :
+                      'bg-green-100 text-green-800'
+                    }`}>
+                      {u.role}
+                    </span>
+                  )}
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                   {new Date(u.createdAt).toLocaleDateString()}
@@ -135,6 +154,7 @@ const UserManagement = () => {
                 >
                   <option value="USER">Worker (USER)</option>
                   {canCreateAdmin && <option value="ADMIN">Admin</option>}
+                  {user?.role === 'HOST' && <option value="HOST">Host</option>}
                 </select>
               </div>
 

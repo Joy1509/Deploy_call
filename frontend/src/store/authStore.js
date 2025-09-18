@@ -45,15 +45,23 @@ const useAuthStore = create(
       },
 
       createUser: async (userData) => {
-        try {
-          const response = await apiClient.post('/users', userData);
-          set(state => ({ users: [...state.users, response.data] }));
-          toast.success('User created successfully');
-          return response.data;
-        } catch (error) {
-          toast.error('Failed to create user');
-          throw error;
-        }
+        const newUser = {
+          id: Date.now(),
+          ...userData,
+          createdAt: new Date().toISOString()
+        };
+        set(state => ({ users: [...state.users, newUser] }));
+        toast.success('User created successfully');
+        return newUser;
+      },
+
+      updateUserRole: async (userId, newRole) => {
+        set(state => ({
+          users: state.users.map(u => 
+            u.id === userId ? { ...u, role: newRole } : u
+          )
+        }));
+        toast.success('User role updated successfully');
       }
     }),
     {
