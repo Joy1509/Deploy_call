@@ -11,21 +11,16 @@ const useAuthStore = create(
       users: [],
       
       login: async (username, password) => {
-        // Mock login for testing
-        if (username && password) {
-          const mockUser = {
-            id: 1,
-            username: username,
-            role: username === 'host' ? 'HOST' : username === 'admin' ? 'ADMIN' : 'USER',
-            createdAt: new Date().toISOString()
-          };
-          const mockToken = 'mock-token-' + Date.now();
-          set({ user: mockUser, token: mockToken });
-          toast.success(`Welcome back, ${username}!`);
+        try {
+          const response = await apiClient.post('/auth/login', { username, password });
+          const { token, user } = response.data;
+          set({ user, token });
+          toast.success(`Welcome back, ${user.username}!`);
           return true;
+        } catch (err) {
+          toast.error('Invalid credentials');
+          return false;
         }
-        toast.error('Please enter username and password');
-        return false;
       },
       
       logout: () => {
@@ -34,34 +29,36 @@ const useAuthStore = create(
       },
       
       fetchUsers: async () => {
-        // Mock users data
-        const mockUsers = [
-          { id: 1, username: 'host', role: 'HOST', createdAt: new Date().toISOString() },
-          { id: 2, username: 'admin', role: 'ADMIN', createdAt: new Date().toISOString() },
-          { id: 3, username: 'worker1', role: 'USER', createdAt: new Date().toISOString() },
-          { id: 4, username: 'worker2', role: 'USER', createdAt: new Date().toISOString() }
-        ];
-        set({ users: mockUsers });
+        try {
+          const response = await apiClient.get('/users');
+          set({ users: response.data });
+        } catch (err) {
+          console.error('Failed to fetch users', err);
+        }
       },
 
       createUser: async (userData) => {
-        const newUser = {
-          id: Date.now(),
-          ...userData,
-          createdAt: new Date().toISOString()
-        };
-        set(state => ({ users: [...state.users, newUser] }));
-        toast.success('User created successfully');
-        return newUser;
+        try {
+          const response = await apiClient.post('/users', userData);
+          // append the created user to the list
+          set(state => ({ users: [...state.users, response.data] }));
+          toast.success('User created successfully');
+          return response.data;
+        } catch (err) {
+          toast.error('Failed to create user');
+          throw err;
+        }
       },
 
       updateUserRole: async (userId, newRole) => {
-        set(state => ({
-          users: state.users.map(u => 
-            u.id === userId ? { ...u, role: newRole } : u
-          )
-        }));
-        toast.success('User role updated successfully');
+        try {
+          const response = await apiClient.put(`/users/${userId}`, { role: newRole });
+          set(state => ({ users: state.users.map(u => u.id === userId ? response.data : u) }));
+          toast.success('User role updated successfully');
+        } catch (err) {
+          toast.error('Failed to update role');
+          throw err;
+        }
       }
     }),
     {

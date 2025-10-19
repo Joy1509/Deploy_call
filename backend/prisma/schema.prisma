@@ -1,6 +1,5 @@
 generator client {
   provider = "prisma-client-js"
-  output   = "../src/generated/prisma"
 }
 
 datasource db {
@@ -12,11 +11,30 @@ model User{
   id        Int     @default(autoincrement())  @id
   username  String  @unique
   password  String
+  role      String  @default("USER")
+  createdAt DateTime @default(now())
 }
 
 model Customer{
-  id        Int @unique
-  Phone_no  Int
-  email     String
-  cname     String
+  id       Int     @id @default(autoincrement())
+  name     String
+  phone    String  @unique
+  email    String?
+  address  String?
+  calls    Call[]
+}
+
+model Call {
+  id         Int      @id @default(autoincrement())
+  problem    String
+  category   String
+  status     String
+  assignedTo String?
+  assignedAt DateTime?
+  createdBy  String
+  createdAt  DateTime @default(now())
+  completedBy String?
+  completedAt DateTime?
+  customer   Customer @relation(fields: [customerId], references: [id])
+  customerId Int
 }
