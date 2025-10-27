@@ -15,7 +15,7 @@ const prisma = new PrismaClient();
 const app = express();
 app.use(express.json());
 // allow the frontend dev server to talk to this API in development
-app.use(cors({ origin: process.env.FRONTEND_ORIGIN ?? 'https://call-manage.netlify.app' }));
+app.use(cors({ origin: process.env.FRONTEND_ORIGIN ?? 'https://call-manage.netlify.app', methods: ["GET", "POST", "PUT", "DELETE"] }));
 
 const JWT_SECRET = process.env.JWT_SECRET ?? 'dev-secret';
 
