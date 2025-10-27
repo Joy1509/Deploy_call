@@ -69,11 +69,13 @@ Uses Zustand for state management with persistence:
 
 ## API Integration
 
-Configured to work with a backend API at `http://localhost:5000/api`
-- Authentication endpoints
-- User management endpoints  
-- Call management endpoints
-- Customer data endpoints
+The frontend reads the backend base URL from the Vite environment variable `VITE_API_URL`.
+
+- During development you can set this in a local `.env` file (e.g. `VITE_API_URL=http://localhost:4000`).
+- In production set `VITE_API_URL` to your deployed backend, for example `https://call-management-1gct.onrender.com`.
+
+The API client is configured to use `import.meta.env.VITE_API_URL` with a sensible fallback.
+Endpoints used by the app include authentication, user management, call management, and customer data endpoints.
 
 ## Styling
 
