@@ -1,2 +1,0 @@
--- AlterTable
-ALTER TABLE "User" ADD COLUMN "secretPassword" TEXT NOT NULL DEFAULT 'DEFAULTSECRET';

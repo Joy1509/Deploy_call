@@ -23,9 +23,10 @@ const EngineerAnalytics = () => {
     try {
       setLoading(true);
       const response = await apiClient.get(`/analytics/engineers?days=${timeFilter}`);
-      setAnalytics(response.data);
+      setAnalytics(response.data.engineers || []);
     } catch (error) {
       toast.error('Failed to fetch analytics');
+      setAnalytics([]);
     } finally {
       setLoading(false);
     }
@@ -36,17 +37,6 @@ const EngineerAnalytics = () => {
       fetchAnalytics();
     }
   }, [timeFilter, user]);
-
-  const formatTime = (hours) => {
-    if (hours === 0) return 'N/A';
-    if (hours < 1) {
-      const minutes = Math.round(hours * 60);
-      return `${minutes}m`;
-    }
-    const wholeHours = Math.floor(hours);
-    const minutes = Math.round((hours - wholeHours) * 60);
-    return minutes > 0 ? `${wholeHours}h ${minutes}m` : `${wholeHours}h`;
-  };
 
   const handleSort = (field) => {
     if (sortField === field) {
@@ -61,7 +51,7 @@ const EngineerAnalytics = () => {
     let aVal = a[sortField];
     let bVal = b[sortField];
     
-    if (sortField === 'name') {
+    if (sortField === 'username') {
       aVal = aVal.toLowerCase();
       bVal = bVal.toLowerCase();
     }
@@ -139,7 +129,7 @@ const EngineerAnalytics = () => {
               <div>
                 <h3 className="text-sm sm:text-base font-medium text-purple-700 mb-1">Total Completed</h3>
                 <p className="text-2xl sm:text-3xl font-bold text-purple-800">
-                  {analytics.reduce((sum, eng) => sum + eng.completed, 0)}
+                  {analytics.reduce((sum, eng) => sum + eng.completedCalls, 0)}
                 </p>
               </div>
               <div className="text-purple-500 text-2xl">🎯</div>
@@ -150,7 +140,7 @@ const EngineerAnalytics = () => {
               <div>
                 <h3 className="text-sm sm:text-base font-medium text-orange-700 mb-1">Total Pending</h3>
                 <p className="text-2xl sm:text-3xl font-bold text-orange-800">
-                  {analytics.reduce((sum, eng) => sum + eng.pending, 0)}
+                  {analytics.reduce((sum, eng) => sum + eng.pendingCalls, 0)}
                 </p>
               </div>
               <div className="text-orange-500 text-2xl">⏳</div>
@@ -181,132 +171,80 @@ const EngineerAnalytics = () => {
               <p className="text-sm">No analytics found for the selected time period</p>
             </div>
           ) : (
-            <>
-              {/* Mobile/Tablet Card View */}
-              <div className="lg:hidden">
-                <div className="divide-y divide-gray-200">
+            <div className="overflow-x-auto">
+              <table className="min-w-full divide-y divide-gray-200">
+                <thead className="bg-gray-50">
+                  <tr>
+                    <th 
+                      className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
+                      onClick={() => handleSort('username')}
+                    >
+                      Engineer {getSortIcon('username')}
+                    </th>
+                    <th 
+                      className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
+                      onClick={() => handleSort('totalCalls')}
+                    >
+                      Total Assigned {getSortIcon('totalCalls')}
+                    </th>
+                    <th 
+                      className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
+                      onClick={() => handleSort('completedCalls')}
+                    >
+                      Completed {getSortIcon('completedCalls')}
+                    </th>
+                    <th 
+                      className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
+                      onClick={() => handleSort('pendingCalls')}
+                    >
+                      Pending {getSortIcon('pendingCalls')}
+                    </th>
+                    <th 
+                      className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
+                      onClick={() => handleSort('completionRate')}
+                    >
+                      Completion Rate {getSortIcon('completionRate')}
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Role
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="bg-white divide-y divide-gray-200">
                   {sortedAnalytics.map((engineer, index) => (
-                    <div key={engineer.name} className="p-4 hover:bg-gray-50 transition-colors">
-                      <div className="flex justify-between items-start mb-3">
-                        <div className="flex-1">
-                          <div className="flex items-center gap-2 mb-2">
-                            <span className="text-lg">👨‍💻</span>
-                            <div className="text-sm font-semibold text-gray-900">{engineer.name}</div>
-                          </div>
-                          <div className="flex items-center gap-2">
-                            <span className={`px-3 py-1 rounded-full text-xs font-medium ${
-                              engineer.completionRate >= 80 ? 'bg-green-100 text-green-800' :
-                              engineer.completionRate >= 60 ? 'bg-yellow-100 text-yellow-800' :
-                              'bg-red-100 text-red-800'
-                            }`}>
-                              {engineer.completionRate}% Rate
-                            </span>
-                          </div>
+                    <tr key={engineer.username} className="hover:bg-gray-50 transition-colors">
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="flex items-center gap-2">
+                          <span className="text-lg">👨💻</span>
+                          <div className="text-sm font-medium text-gray-900">{engineer.username}</div>
                         </div>
-                      </div>
-
-                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-3">
-                        <div>
-                          <div className="text-xs font-medium text-gray-500 mb-1">Total Assigned</div>
-                          <div className="text-sm font-semibold text-gray-900">{engineer.totalAssigned}</div>
-                        </div>
-                        <div>
-                          <div className="text-xs font-medium text-gray-500 mb-1">Completed</div>
-                          <div className="text-sm font-semibold text-green-600">{engineer.completed}</div>
-                        </div>
-                        <div>
-                          <div className="text-xs font-medium text-gray-500 mb-1">Pending</div>
-                          <div className="text-sm font-semibold text-yellow-600">{engineer.pending}</div>
-                        </div>
-                        <div>
-                          <div className="text-xs font-medium text-gray-500 mb-1">Avg Time</div>
-                          <div className="text-sm font-semibold text-gray-600">{formatTime(engineer.avgResolutionTime)}</div>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              {/* Desktop Table View */}
-              <div className="hidden lg:block overflow-x-auto">
-                <table className="min-w-full divide-y divide-gray-200">
-                  <thead className="bg-gray-50">
-                    <tr>
-                      <th 
-                        className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
-                        onClick={() => handleSort('name')}
-                      >
-                        Engineer {getSortIcon('name')}
-                      </th>
-                      <th 
-                        className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
-                        onClick={() => handleSort('totalAssigned')}
-                      >
-                        Total Assigned {getSortIcon('totalAssigned')}
-                      </th>
-                      <th 
-                        className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
-                        onClick={() => handleSort('completed')}
-                      >
-                        Completed {getSortIcon('completed')}
-                      </th>
-                      <th 
-                        className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
-                        onClick={() => handleSort('pending')}
-                      >
-                        Pending {getSortIcon('pending')}
-                      </th>
-                      <th 
-                        className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
-                        onClick={() => handleSort('completionRate')}
-                      >
-                        Completion Rate {getSortIcon('completionRate')}
-                      </th>
-                      <th 
-                        className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
-                        onClick={() => handleSort('avgResolutionTime')}
-                      >
-                        Avg Resolution Time {getSortIcon('avgResolutionTime')}
-                      </th>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        {engineer.totalCalls}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-green-600">
+                        {engineer.completedCalls}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-yellow-600">
+                        {engineer.pendingCalls}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <span className={`px-3 py-1 rounded-full text-xs font-medium ${
+                          engineer.completionRate >= 80 ? 'bg-green-100 text-green-800' :
+                          engineer.completionRate >= 60 ? 'bg-yellow-100 text-yellow-800' :
+                          'bg-red-100 text-red-800'
+                        }`}>
+                          {engineer.completionRate}%
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        {engineer.role}
+                      </td>
                     </tr>
-                  </thead>
-                  <tbody className="bg-white divide-y divide-gray-200">
-                    {sortedAnalytics.map((engineer, index) => (
-                      <tr key={engineer.name} className="hover:bg-gray-50 transition-colors">
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="flex items-center gap-2">
-                            <span className="text-lg">👨‍💻</span>
-                            <div className="text-sm font-medium text-gray-900">{engineer.name}</div>
-                          </div>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                          {engineer.totalAssigned}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-green-600">
-                          {engineer.completed}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-yellow-600">
-                          {engineer.pending}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <span className={`px-3 py-1 rounded-full text-xs font-medium ${
-                            engineer.completionRate >= 80 ? 'bg-green-100 text-green-800' :
-                            engineer.completionRate >= 60 ? 'bg-yellow-100 text-yellow-800' :
-                            'bg-red-100 text-red-800'
-                          }`}>
-                            {engineer.completionRate}%
-                          </span>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                          {formatTime(engineer.avgResolutionTime)}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           )}
         </div>
       )}

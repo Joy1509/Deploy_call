@@ -33,7 +33,8 @@ const UserManagement = () => {
   const [isCreating, setIsCreating] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [isDeleting, setIsDeleting] = useState({});
-  const [isConfirming, setIsConfirming] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  const [loadError, setLoadError] = useState(null);
   const [showWrongPasswordAlert, setShowWrongPasswordAlert] = useState(false);
   const [formData, setFormData] = useState({
     username: '',
@@ -83,7 +84,14 @@ const UserManagement = () => {
 
   useEffect(() => {
     if (hasAccess) {
-      fetchUsers();
+      setIsLoading(true);
+      setLoadError(null);
+      fetchUsers()
+        .then(() => setIsLoading(false))
+        .catch((error) => {
+          setLoadError('Failed to load users. Please refresh the page.');
+          setIsLoading(false);
+        });
     }
   }, [hasAccess, fetchUsers]);
 
@@ -460,83 +468,114 @@ const UserManagement = () => {
             <span>👥</span> Team Members
           </h2>
         </div>
-        <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
-              <tr>
-                <th className="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Username
-                </th>
-                <th className="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Email
-                </th>
-                <th className="hidden lg:table-cell px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Phone
-                </th>
-                <th className="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Role
-                </th>
-                <th className="hidden md:table-cell px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Created At
-                </th>
-                <th className="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Actions
-                </th>
-              </tr>
-            </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
-              {users.map((u) => (
-                <tr key={u.id} className="hover:bg-gray-50 transition-colors">
-                  <td className="px-3 sm:px-6 py-4 whitespace-nowrap text-xs sm:text-sm font-medium text-gray-900">
-                    <div className="flex items-center gap-2">
-                      <span className="text-lg">👤</span>
-                      {u.username}
-                    </div>
-                  </td>
-                  <td className="px-3 sm:px-6 py-4 whitespace-nowrap text-xs sm:text-sm text-gray-500">
-                    {u.email || 'N/A'}
-                  </td>
-                  <td className="hidden lg:table-cell px-3 sm:px-6 py-4 whitespace-nowrap text-xs sm:text-sm text-gray-500">
-                    {u.phone || 'N/A'}
-                  </td>
-                  <td className="px-3 sm:px-6 py-4 whitespace-nowrap">
-                    <span className={`px-3 py-1 text-xs font-medium rounded-full border ${
-                      u.role === 'HOST' ? 'bg-purple-100 text-purple-800 border-purple-200' :
-                      u.role === 'ADMIN' ? 'bg-blue-100 text-blue-800 border-blue-200' :
-                      'bg-green-100 text-green-800 border-green-200'
-                    }`}>
-                      {u.role}
-                    </span>
-                  </td>
-                  <td className="hidden md:table-cell px-3 sm:px-6 py-4 whitespace-nowrap text-xs sm:text-sm text-gray-500">
-                    {new Date(u.createdAt).toLocaleDateString()}
-                  </td>
-                  <td className="px-3 sm:px-6 py-4 whitespace-nowrap text-xs sm:text-sm">
-                    <div className="flex gap-2">
-                      <button
-                        onClick={() => handleEdit(u)}
-                        className="bg-blue-500 text-white px-3 py-1 rounded-lg text-xs hover:bg-blue-600 transition-colors"
-                      >
-                        Edit
-                      </button>
-                      <button
-                        onClick={() => handleDelete(u)}
-                        disabled={isDeleting[u.id]}
-                        className={`px-3 py-1 rounded-lg text-xs transition-colors ${
-                          isDeleting[u.id]
-                            ? 'bg-red-400 text-white cursor-not-allowed'
-                            : 'bg-red-500 text-white hover:bg-red-600'
-                        }`}
-                      >
-                        {isDeleting[u.id] ? 'Pending...' : 'Remove'}
-                      </button>
-                    </div>
-                  </td>
+        
+        {isLoading ? (
+          <div className="p-8 text-center">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
+            <p className="text-gray-600">Loading users...</p>
+          </div>
+        ) : loadError ? (
+          <div className="p-8 text-center">
+            <p className="text-red-600 mb-4">{loadError}</p>
+            <button
+              onClick={() => {
+                setIsLoading(true);
+                setLoadError(null);
+                fetchUsers()
+                  .then(() => setIsLoading(false))
+                  .catch(() => {
+                    setLoadError('Failed to load users. Please refresh the page.');
+                    setIsLoading(false);
+                  });
+              }}
+              className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
+            >
+              Retry
+            </button>
+          </div>
+        ) : users.length === 0 ? (
+          <div className="p-8 text-center">
+            <p className="text-gray-600">No users found.</p>
+          </div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="min-w-full divide-y divide-gray-200">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th className="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Username
+                  </th>
+                  <th className="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Email
+                  </th>
+                  <th className="hidden lg:table-cell px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Phone
+                  </th>
+                  <th className="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Role
+                  </th>
+                  <th className="hidden md:table-cell px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Created At
+                  </th>
+                  <th className="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Actions
+                  </th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+              </thead>
+              <tbody className="bg-white divide-y divide-gray-200">
+                {users.map((u) => (
+                  <tr key={u.id} className="hover:bg-gray-50 transition-colors">
+                    <td className="px-3 sm:px-6 py-4 whitespace-nowrap text-xs sm:text-sm font-medium text-gray-900">
+                      <div className="flex items-center gap-2">
+                        <span className="text-lg">👤</span>
+                        {u.username}
+                      </div>
+                    </td>
+                    <td className="px-3 sm:px-6 py-4 whitespace-nowrap text-xs sm:text-sm text-gray-500">
+                      {u.email || 'N/A'}
+                    </td>
+                    <td className="hidden lg:table-cell px-3 sm:px-6 py-4 whitespace-nowrap text-xs sm:text-sm text-gray-500">
+                      {u.phone || 'N/A'}
+                    </td>
+                    <td className="px-3 sm:px-6 py-4 whitespace-nowrap">
+                      <span className={`px-3 py-1 text-xs font-medium rounded-full border ${
+                        u.role === 'HOST' ? 'bg-purple-100 text-purple-800 border-purple-200' :
+                        u.role === 'ADMIN' ? 'bg-blue-100 text-blue-800 border-blue-200' :
+                        'bg-green-100 text-green-800 border-green-200'
+                      }`}>
+                        {u.role}
+                      </span>
+                    </td>
+                    <td className="hidden md:table-cell px-3 sm:px-6 py-4 whitespace-nowrap text-xs sm:text-sm text-gray-500">
+                      {new Date(u.createdAt).toLocaleDateString()}
+                    </td>
+                    <td className="px-3 sm:px-6 py-4 whitespace-nowrap text-xs sm:text-sm">
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => handleEdit(u)}
+                          className="bg-blue-500 text-white px-3 py-1 rounded-lg text-xs hover:bg-blue-600 transition-colors"
+                        >
+                          Edit
+                        </button>
+                        <button
+                          onClick={() => handleDelete(u)}
+                          disabled={isDeleting[u.id]}
+                          className={`px-3 py-1 rounded-lg text-xs transition-colors ${
+                            isDeleting[u.id]
+                              ? 'bg-red-400 text-white cursor-not-allowed'
+                              : 'bg-red-500 text-white hover:bg-red-600'
+                          }`}
+                        >
+                          {isDeleting[u.id] ? 'Pending...' : 'Remove'}
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
       </div>
 
       {/* Add User Modal */}

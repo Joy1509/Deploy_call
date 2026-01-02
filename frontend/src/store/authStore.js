@@ -76,7 +76,8 @@ const useAuthStore = create(
           if (err.response?.status === 403 || err.response?.status === 401) {
             return;
           }
-          console.error('Failed to fetch users', err);
+          console.error('Failed to fetch users:', err);
+          toast.error('Failed to load users. Please check your connection.');
         }
       },
 

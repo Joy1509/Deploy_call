@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import useAuthStore from '../store/authStore';
 import apiClient from '../api/apiClient';
 import toast from 'react-hot-toast';
+import PasswordStrengthIndicator from '../components/PasswordStrengthIndicator';
 
 const ForgotPassword = () => {
   const [step, setStep] = useState(1); // 1: Email input, 2: OTP verification, 3: New secret password
@@ -10,6 +11,7 @@ const ForgotPassword = () => {
   const [otp, setOtp] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [passwordValidation, setPasswordValidation] = useState(null);
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -74,8 +76,8 @@ const ForgotPassword = () => {
       toast.error('Passwords do not match');
       return;
     }
-    if (newPassword.length < 6) {
-      toast.error('Secret password must be at least 6 characters long');
+    if (passwordValidation && !passwordValidation.isValid) {
+      toast.error('Please fix password validation errors before continuing');
       return;
     }
 
@@ -88,7 +90,8 @@ const ForgotPassword = () => {
         newPassword
       });
       if (response.data.success) {
-        toast.success('Secret password reset successfully');
+        const strength = response.data.passwordStrength || 'unknown';
+        toast.success(`Secret password reset successfully! Strength: ${strength.toUpperCase()}`);
         navigate('/users');
       }
     } catch (error) {
@@ -257,6 +260,10 @@ const ForgotPassword = () => {
                   placeholder="Enter new secret password"
                   required
                 />
+                <PasswordStrengthIndicator 
+                  password={newPassword} 
+                  onValidation={setPasswordValidation}
+                />
                 <button
                   type="button"
                   onClick={() => setShowNewPassword(!showNewPassword)}
@@ -306,7 +313,7 @@ const ForgotPassword = () => {
             </div>
             <button
               type="submit"
-              disabled={isLoading}
+              disabled={isLoading || (passwordValidation && !passwordValidation.isValid)}
               className="w-full py-3 px-4 bg-green-600 text-white font-medium rounded-lg hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 disabled:bg-green-400 transition-colors"
             >
               {isLoading ? 'Updating...' : '✓ Update Secret Password'}
