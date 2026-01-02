@@ -51,10 +51,34 @@ const useAuthStore = create(
         try {
           const { token, user } = await authService.login(username, password);
           set({ user, token, isInitialized: true });
+          
+          // Clear localStorage rate limit data on successful login
+          localStorage.removeItem('loginAttempts');
+          
           toast.success(`Welcome back, ${user.username}!`);
           return true;
         } catch (err) {
-          toast.error('Invalid credentials');
+          // Update localStorage with failed attempt
+          const stored = JSON.parse(localStorage.getItem('loginAttempts') || '{}');
+          const now = Date.now();
+          
+          if (err.response?.status === 429) {
+            // Server says we're rate limited
+            const data = err.response.data;
+            localStorage.setItem('loginAttempts', JSON.stringify({
+              blocked: true,
+              remainingTime: data.remainingTime,
+              blockedAt: now
+            }));
+            toast.error('Too many failed attempts. Please wait.');
+          } else {
+            // Regular login failure
+            localStorage.setItem('loginAttempts', JSON.stringify({
+              ...stored,
+              lastFailedAt: now
+            }));
+            toast.error('Invalid credentials');
+          }
           return false;
         }
       },

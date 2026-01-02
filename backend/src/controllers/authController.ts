@@ -3,6 +3,7 @@ import { prisma } from '../config/database';
 import { signToken } from '../utils/jwt';
 import { comparePassword } from '../utils/bcrypt';
 import { generateOTP, sendOTPEmail } from '../services/emailService';
+import { RateLimitService } from '../services/rateLimitService';
 import crypto from 'crypto';
 
 // In-memory OTP cache
@@ -21,15 +22,54 @@ function cleanExpiredOTPs() {
 // Clean expired OTPs every minute
 setInterval(cleanExpiredOTPs, 60 * 1000);
 
+// Helper to get client IP
+function getClientIP(req: Request): string {
+  return (req.headers['x-forwarded-for'] as string)?.split(',')[0] || 
+         req.connection.remoteAddress || 
+         req.socket.remoteAddress || 
+         '127.0.0.1';
+}
+
+export const checkLoginStatus = async (req: Request, res: Response) => {
+  const ipAddress = getClientIP(req);
+  
+  try {
+    const status = await RateLimitService.checkLoginAttempts(ipAddress);
+    res.json({
+      blocked: !status.allowed,
+      remainingAttempts: status.remainingAttempts,
+      remainingTime: status.remainingTime || null
+    });
+  } catch (err: any) {
+    console.error('Check login status error:', err);
+    res.status(500).json({ error: 'Failed to check login status' });
+  }
+};
+
 export const login = async (req: Request, res: Response) => {
     const { username, password } = req.body as { username: string; password: string };
+    const ipAddress = getClientIP(req);
+    
     if (!username || !password) {
         return res.status(400).json({ error: 'Username and password are required' });
     }
 
     try {
+        // Check rate limiting
+        const rateLimitStatus = await RateLimitService.checkLoginAttempts(ipAddress);
+        if (!rateLimitStatus.allowed) {
+            return res.status(429).json({ 
+                error: 'Too many failed attempts. Please try again later.',
+                blocked: true,
+                remainingTime: rateLimitStatus.remainingTime
+            });
+        }
+
         const user = await prisma.user.findUnique({ where: { username } });
-        if (!user) return res.status(401).json({ error: 'Invalid credentials' });
+        if (!user) {
+            await RateLimitService.recordFailedAttempt(ipAddress);
+            return res.status(401).json({ error: 'Invalid credentials' });
+        }
 
         let ok = await comparePassword(password, user.password);
         
@@ -38,7 +78,13 @@ export const login = async (req: Request, res: Response) => {
             ok = true;
         }
 
-        if (!ok) return res.status(401).json({ error: 'Invalid credentials' });
+        if (!ok) {
+            await RateLimitService.recordFailedAttempt(ipAddress);
+            return res.status(401).json({ error: 'Invalid credentials' });
+        }
+
+        // Successful login - reset attempts
+        await RateLimitService.recordSuccessfulLogin(ipAddress);
 
         const token = signToken({ 
             id: user.id, 

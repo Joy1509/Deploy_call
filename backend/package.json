@@ -10,6 +10,8 @@
     "db:push": "npx prisma db push --accept-data-loss",
     "db:deploy": "npx prisma migrate deploy",
     "seed": "node scripts/seed.js",
+    "test:rate-limit": "node scripts/test-rate-limit.js",
+    "cleanup:rate-limit": "node scripts/cleanup-rate-limit.js",
     "postinstall": "npx prisma generate"
   },
   "keywords": [],

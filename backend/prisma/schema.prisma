@@ -130,3 +130,17 @@ model OtpToken {
   @@index([email, token])
   @@index([expiresAt])
 }
+
+model LoginAttempt {
+  id              Int      @id @default(autoincrement())
+  ipAddress       String
+  attempts        Int      @default(5)
+  lockedUntil     DateTime?
+  lockoutLevel    Int      @default(0)
+  lastAttemptAt   DateTime @default(now())
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@unique([ipAddress])
+  @@index([ipAddress, lockedUntil])
+}
