@@ -41,7 +41,7 @@ function App() {
   }
 
   return (
-    <div className="bg-gray-50 min-h-screen font-sans">
+    <div className="bg-gray-50 min-h-screen font-sans" style={{overscrollBehavior: 'none', position: 'relative'}}>
       {showNavbar && <Navbar />}
       <main className="p-4 sm:p-6 lg:p-8 max-w-screen-2xl mx-auto">
         <Routes>

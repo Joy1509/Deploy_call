@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import apiClient from '../api/apiClient';
+import { categoryService } from '../services/categoryService';
 import toast from 'react-hot-toast';
 
 const useServiceCategoryStore = create((set, get) => ({
@@ -28,9 +28,9 @@ const useServiceCategoryStore = create((set, get) => ({
   
   fetchServiceCategories: async () => {
     try {
-      const response = await apiClient.get('/service-categories');
-      set({ serviceCategories: response.data });
-      return response.data;
+      const serviceCategories = await categoryService.getServiceCategories();
+      set({ serviceCategories });
+      return serviceCategories;
     } catch (error) {
       console.error('Failed to fetch service categories:', error);
       return [];
@@ -39,9 +39,9 @@ const useServiceCategoryStore = create((set, get) => ({
   
   addServiceCategory: async (name) => {
     try {
-      const response = await apiClient.post('/service-categories', { name });
+      const category = await categoryService.createServiceCategory(name);
       toast.success('Service category added successfully');
-      return response.data;
+      return category;
     } catch (error) {
       const message = error.response?.data?.error || 'Failed to add service category';
       toast.error(message);
@@ -51,9 +51,9 @@ const useServiceCategoryStore = create((set, get) => ({
   
   updateServiceCategory: async (id, name) => {
     try {
-      const response = await apiClient.put(`/service-categories/${id}`, { name });
+      const category = await categoryService.updateServiceCategory(id, name);
       toast.success('Service category updated successfully');
-      return response.data;
+      return category;
     } catch (error) {
       const message = error.response?.data?.error || 'Failed to update service category';
       toast.error(message);
@@ -63,7 +63,7 @@ const useServiceCategoryStore = create((set, get) => ({
   
   deleteServiceCategory: async (id) => {
     try {
-      await apiClient.delete(`/service-categories/${id}`);
+      await categoryService.deleteServiceCategory(id);
       toast.success('Service category deleted successfully');
     } catch (error) {
       toast.error('Failed to delete service category');

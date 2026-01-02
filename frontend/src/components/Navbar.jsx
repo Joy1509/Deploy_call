@@ -20,9 +20,9 @@ const Navbar = () => {
   };
 
   return (
-    <nav className="bg-white shadow-lg border-b">
+    <nav className="bg-white shadow-lg border-b sticky top-0 z-50" style={{position: 'sticky', top: '0px'}}>
       <div className="max-w-7xl mx-auto px-2 sm:px-4">
-        <div className="flex justify-between items-center h-16">
+        <div className="flex justify-between items-center min-h-16 h-16">
           <div className="flex items-center space-x-2 sm:space-x-8">
             <button
               onClick={() => setShowMobileMenu(!showMobileMenu)}
@@ -37,8 +37,8 @@ const Navbar = () => {
               </svg>
             </button>
             
-            <Link to="/" className="flex items-center">
-              <img src="/deep.png" alt="Deep Infotech" className="h-8 sm:h-10 lg:h-12 w-auto max-w-none" />
+            <Link to="/" className="flex items-center flex-shrink-0">
+              <img src="/deep.png" alt="Deep Infotech" className="h-8 sm:h-10 lg:h-12 w-auto" />
             </Link>
             
             <div className="hidden lg:flex space-x-1 xl:space-x-4">

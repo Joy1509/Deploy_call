@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import apiClient from '../api/apiClient';
+import { carryInService } from '../services/carryInService';
 import toast from 'react-hot-toast';
 
 const useCarryInServiceStore = create((set, get) => ({
@@ -22,8 +22,8 @@ const useCarryInServiceStore = create((set, get) => ({
   fetchServices: async () => {
     set({ loading: true });
     try {
-      const response = await apiClient.get('/carry-in-services');
-      set({ services: response.data, loading: false });
+      const services = await carryInService.getCarryInServices();
+      set({ services, loading: false });
     } catch (error) {
       toast.error('Failed to fetch services');
       set({ loading: false });
@@ -32,9 +32,9 @@ const useCarryInServiceStore = create((set, get) => ({
 
   addService: async (serviceData) => {
     try {
-      const response = await apiClient.post('/carry-in-services', serviceData);
+      const service = await carryInService.createCarryInService(serviceData);
       toast.success('Service added successfully');
-      return response.data;
+      return service;
     } catch (error) {
       toast.error('Failed to add service');
       throw error;
@@ -43,9 +43,9 @@ const useCarryInServiceStore = create((set, get) => ({
 
   completeService: async (serviceId, completeRemark) => {
     try {
-      const response = await apiClient.post(`/carry-in-services/${serviceId}/complete`, { completeRemark });
+      const service = await carryInService.completeCarryInService(serviceId, completeRemark);
       toast.success('Service marked as completed');
-      return response.data;
+      return service;
     } catch (error) {
       toast.error('Failed to complete service');
       throw error;
@@ -54,9 +54,9 @@ const useCarryInServiceStore = create((set, get) => ({
 
   deliverService: async (serviceId, deliverRemark) => {
     try {
-      const response = await apiClient.post(`/carry-in-services/${serviceId}/deliver`, { deliverRemark });
+      const service = await carryInService.deliverCarryInService(serviceId, deliverRemark);
       toast.success('Service delivered to customer');
-      return response.data;
+      return service;
     } catch (error) {
       toast.error('Failed to deliver service');
       throw error;
@@ -64,12 +64,7 @@ const useCarryInServiceStore = create((set, get) => ({
   },
 
   findCustomerByPhone: async (phone) => {
-    try {
-      const response = await apiClient.get(`/carry-in-customers/phone/${phone}`);
-      return response.data;
-    } catch (error) {
-      return null;
-    }
+    return await carryInService.getCarryInCustomerByPhone(phone);
   }
 }));
 

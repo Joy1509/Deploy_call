@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import apiClient from '../api/apiClient';
+import { categoryService } from '../services/categoryService';
 import toast from 'react-hot-toast';
 
 const useCategoryStore = create((set, get) => ({
@@ -34,9 +34,9 @@ const useCategoryStore = create((set, get) => ({
     }
     
     try {
-      const response = await apiClient.get('/categories');
-      set({ categories: response.data });
-      return response.data;
+      const categoriesData = await categoryService.getCategories();
+      set({ categories: categoriesData });
+      return categoriesData;
     } catch (error) {
       console.error('Failed to fetch categories:', error);
       return [];
@@ -45,9 +45,9 @@ const useCategoryStore = create((set, get) => ({
   
   addCategory: async (name) => {
     try {
-      const response = await apiClient.post('/categories', { name });
+      const category = await categoryService.createCategory(name);
       toast.success('Category added successfully');
-      return response.data;
+      return category;
     } catch (error) {
       const message = error.response?.data?.error || 'Failed to add category';
       toast.error(message);
@@ -57,9 +57,9 @@ const useCategoryStore = create((set, get) => ({
   
   updateCategory: async (id, name) => {
     try {
-      const response = await apiClient.put(`/categories/${id}`, { name });
+      const category = await categoryService.updateCategory(id, name);
       toast.success('Category updated successfully');
-      return response.data;
+      return category;
     } catch (error) {
       const message = error.response?.data?.error || 'Failed to update category';
       toast.error(message);
@@ -69,7 +69,7 @@ const useCategoryStore = create((set, get) => ({
   
   deleteCategory: async (id) => {
     try {
-      await apiClient.delete(`/categories/${id}`);
+      await categoryService.deleteCategory(id);
       toast.success('Category deleted successfully');
     } catch (error) {
       toast.error('Failed to delete category');

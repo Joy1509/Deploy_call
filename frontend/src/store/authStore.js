@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import apiClient from '../api/apiClient';
+import { authService } from '../services/authService';
+import { userService } from '../services/userService';
 import toast from 'react-hot-toast';
 
 const useAuthStore = create(
@@ -16,8 +17,8 @@ const useAuthStore = create(
         const { token, user } = get();
         if (token && !user) {
           try {
-            const response = await apiClient.get('/auth/me');
-            set({ user: response.data, isInitialized: true });
+            const userData = await authService.getMe();
+            set({ user: userData, isInitialized: true });
           } catch (error) {
             // Token is invalid, clear it
             set({ token: null, user: null, isInitialized: true });
@@ -48,8 +49,7 @@ const useAuthStore = create(
       
       login: async (username, password) => {
         try {
-          const response = await apiClient.post('/auth/login', { username, password });
-          const { token, user } = response.data;
+          const { token, user } = await authService.login(username, password);
           set({ user, token, isInitialized: true });
           toast.success(`Welcome back, ${user.username}!`);
           return true;
@@ -70,8 +70,8 @@ const useAuthStore = create(
           return;
         }
         try {
-          const response = await apiClient.get('/users');
-          set({ users: response.data });
+          const users = await userService.getUsers();
+          set({ users });
         } catch (err) {
           if (err.response?.status === 403 || err.response?.status === 401) {
             return;
@@ -82,9 +82,9 @@ const useAuthStore = create(
 
       createUser: async (userData) => {
         try {
-          const response = await apiClient.post('/users', userData);
+          const user = await userService.createUser(userData);
           toast.success('User created successfully');
-          return response.data;
+          return user;
         } catch (err) {
           toast.error('Failed to create user');
           throw err;
@@ -97,7 +97,7 @@ const useAuthStore = create(
           if (secretPassword) {
             payload.secretPassword = secretPassword;
           }
-          const response = await apiClient.put(`/users/${userId}`, payload);
+          await userService.updateUser(userId, payload);
           toast.success('User role updated successfully');
         } catch (err) {
           toast.error('Failed to update role');
@@ -107,9 +107,9 @@ const useAuthStore = create(
 
       updateUser: async (userId, userData) => {
         try {
-          const response = await apiClient.put(`/users/${userId}`, userData);
+          const user = await userService.updateUser(userId, userData);
           toast.success('User updated successfully');
-          return response.data;
+          return user;
         } catch (err) {
           toast.error('Failed to update user');
           throw err;
@@ -118,7 +118,7 @@ const useAuthStore = create(
 
       deleteUser: async (userId) => {
         try {
-          await apiClient.delete(`/users/${userId}`);
+          await userService.deleteUser(userId);
           toast.success('User deleted successfully');
         } catch (err) {
           toast.error('Failed to delete user');

@@ -1,5 +1,6 @@
 import { create } from 'zustand';
-import apiClient from '../api/apiClient';
+import { callService } from '../services/callService';
+import { customerService } from '../services/customerService';
 import toast from 'react-hot-toast';
 
 const useCallStore = create((set, get) => ({
@@ -25,9 +26,9 @@ const useCallStore = create((set, get) => ({
   
   addCall: async (callData) => {
     try {
-      const response = await apiClient.post('/calls', callData);
+      const call = await callService.createCall(callData);
       toast.success('Call added successfully');
-      return response.data;
+      return call;
     } catch (error) {
       toast.error('Failed to add call. Please try again.');
       throw error;
@@ -36,8 +37,8 @@ const useCallStore = create((set, get) => ({
 
   fetchCalls: async () => {
     try {
-      const response = await apiClient.get('/calls');
-      set({ calls: response.data });
+      const calls = await callService.getCalls();
+      set({ calls });
     } catch (error) {
       console.error('Failed to fetch calls:', error);
       toast.error('Failed to fetch calls');
@@ -46,9 +47,9 @@ const useCallStore = create((set, get) => ({
 
   updateCall: async (callId, updates) => {
     try {
-      const response = await apiClient.put(`/calls/${callId}`, updates);
+      const call = await callService.updateCall(callId, updates);
       toast.success('Call updated successfully');
-      return response.data;
+      return call;
     } catch (error) {
       toast.error('Failed to update call');
       throw error;
@@ -57,8 +58,8 @@ const useCallStore = create((set, get) => ({
 
   fetchCustomers: async () => {
     try {
-      const response = await apiClient.get('/customers');
-      set({ customers: response.data });
+      const customers = await customerService.getCustomers();
+      set({ customers });
     } catch (error) {
       console.error('Failed to fetch customers:', error);
       toast.error('Failed to fetch customers');
@@ -67,24 +68,14 @@ const useCallStore = create((set, get) => ({
 
   findCustomerByPhone: async (phone) => {
     if (!phone) return null;
-    try {
-      const response = await apiClient.get(`/customers/phone/${phone}`, {
-        headers: { 'X-Silent-404': 'true' }
-      });
-      return response.data;
-    } catch (error) {
-      return null;
-    }
+    return await customerService.getCustomerByPhone(phone);
   },
 
   assignCall: async (callId, assignee, engineerRemark) => {
     try {
-      const response = await apiClient.post(`/calls/${callId}/assign`, {
-        assignee,
-        engineerRemark
-      });
+      const call = await callService.assignCall(callId, assignee, engineerRemark);
       toast.success('Call assigned successfully');
-      return response.data;
+      return call;
     } catch (error) {
       toast.error('Failed to assign call');
       throw error;
@@ -93,11 +84,9 @@ const useCallStore = create((set, get) => ({
 
   completeCall: async (callId, remark) => {
     try {
-      const response = await apiClient.post(`/calls/${callId}/complete`, {
-        remark
-      });
+      const call = await callService.completeCall(callId, remark);
       toast.success('Call completed successfully');
-      return response.data;
+      return call;
     } catch (error) {
       toast.error('Failed to complete call');
       throw error;
