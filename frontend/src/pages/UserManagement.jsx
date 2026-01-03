@@ -1,5 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { createUserSchema, updateUserSchema } from '../schemas/userValidation';
+import PasswordStrengthIndicator from '../components/PasswordStrengthIndicator';
 import useAuthStore from '../store/authStore';
 import useCallStore from '../store/callStore';
 import useSocket from '../hooks/useSocket';
@@ -52,6 +56,33 @@ const UserManagement = () => {
     secretPassword: ''
   });
   
+  // React Hook Form for Add User
+  const {
+    register: registerAdd,
+    handleSubmit: handleSubmitAdd,
+    formState: { errors: errorsAdd },
+    watch: watchAdd,
+    reset: resetAdd
+  } = useForm({
+    resolver: zodResolver(createUserSchema)
+  });
+
+  // React Hook Form for Edit User
+  const {
+    register: registerEdit,
+    handleSubmit: handleSubmitEdit,
+    formState: { errors: errorsEdit },
+    watch: watchEdit,
+    reset: resetEdit,
+    setValue: setValueEdit
+  } = useForm({
+    resolver: zodResolver(updateUserSchema)
+  });
+
+  // Watch password fields for strength indicator
+  const addPassword = watchAdd('password');
+  const editPassword = watchEdit('password');
+  
   const { users, fetchUsers, createUser, updateUser, deleteUser, user } = useAuthStore();
   const { calls } = useCallStore();
   
@@ -99,19 +130,8 @@ const UserManagement = () => {
     }
   }, [users, user, hasAccess]);
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    if (!formData.username || !formData.password || !formData.email || !formData.phone) {
-      setAlertMessage('Username, password, email, and phone are required');
-      setShowAlert(true);
-      return;
-    }
-    if (formData.role === 'HOST' && !formData.secretPassword.trim()) {
-      setAlertMessage('Secret password is required for HOST role');
-      setShowAlert(true);
-      return;
-    }
-    if (formData.role === 'HOST') {
+  const handleSubmit = async (data) => {
+    if (data.role === 'HOST') {
       const hostCount = users.filter(u => u.role === 'HOST').length;
       if (hostCount >= 3) {
         setHostLimitMessage('Maximum 3 HOSTs allowed. Cannot create more HOST users.');
@@ -120,36 +140,24 @@ const UserManagement = () => {
       }
     }
     setIsCreating(true);
-    setPendingAction({ type: 'create', data: formData });
+    setPendingAction({ type: 'create', data });
     setShowActionSecretModal(true);
   };
 
   const handleEdit = (userToEdit) => {
     setEditingUser(userToEdit);
-    setEditFormData({
-      username: userToEdit.username,
-      password: '',
+    resetEdit({
       email: userToEdit.email || '',
       phone: userToEdit.phone || '',
       role: userToEdit.role,
+      password: '',
       secretPassword: ''
     });
     setShowEditForm(true);
   };
 
-  const handleEditSubmit = async (e) => {
-    e.preventDefault();
-    if (!editFormData.email || !editFormData.phone) {
-      setAlertMessage('Email and phone are required');
-      setShowAlert(true);
-      return;
-    }
-    if (editFormData.role === 'HOST' && editingUser.role !== 'HOST' && !editFormData.secretPassword.trim()) {
-      setAlertMessage('Secret password is required when promoting to HOST role');
-      setShowAlert(true);
-      return;
-    }
-    if (editFormData.role === 'HOST' && editingUser.role !== 'HOST') {
+  const handleEditSubmit = async (data) => {
+    if (data.role === 'HOST' && editingUser.role !== 'HOST') {
       const hostCount = users.filter(u => u.role === 'HOST').length;
       if (hostCount >= 3) {
         setHostLimitMessage('Maximum 3 HOSTs allowed. Cannot promote more users to HOST.');
@@ -158,15 +166,15 @@ const UserManagement = () => {
       }
     }
     const updateData = {
-      role: editFormData.role,
-      email: editFormData.email,
-      phone: editFormData.phone
+      role: data.role,
+      email: data.email,
+      phone: data.phone
     };
-    if (editFormData.password) {
-      updateData.password = editFormData.password;
+    if (data.password) {
+      updateData.password = data.password;
     }
-    if (editFormData.secretPassword) {
-      updateData.secretPassword = editFormData.secretPassword;
+    if (data.secretPassword) {
+      updateData.secretPassword = data.secretPassword;
     }
     setIsEditing(true);
     setPendingAction({ type: 'edit', data: updateData, userId: editingUser.id });
@@ -234,7 +242,7 @@ const UserManagement = () => {
             await createUser(pendingAction.data);
             setSuccessMessage(`User "${pendingAction.data.username}" has been created successfully.`);
             setShowSuccessAlert(true);
-            setFormData({ username: '', password: '', email: '', phone: '', role: 'ENGINEER', secretPassword: '' });
+            resetAdd();
             setShowAddForm(false);
           } else if (pendingAction.type === 'edit') {
             const result = await updateUser(pendingAction.userId, pendingAction.data);
@@ -556,76 +564,82 @@ const UserManagement = () => {
               </button>
             </div>
 
-            <form onSubmit={handleSubmit} className="space-y-4">
+            <form onSubmit={handleSubmitAdd(handleSubmit)} className="space-y-4">
               <div>
                 <label className="block text-xs sm:text-sm font-medium mb-1">Username *</label>
                 <input
-                  type="text"
-                  value={formData.username}
-                  onChange={(e) => setFormData(prev => ({ ...prev, username: e.target.value }))}
+                  {...registerAdd('username')}
                   className="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500 text-sm"
-                  required
                 />
+                {errorsAdd.username && (
+                  <p className="text-red-500 text-xs mt-1">{errorsAdd.username.message}</p>
+                )}
               </div>
 
               <div>
                 <label className="block text-xs sm:text-sm font-medium mb-1">Email *</label>
                 <input
                   type="email"
-                  value={formData.email}
-                  onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))}
+                  {...registerAdd('email')}
                   className="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500 text-sm"
-                  required
                 />
+                {errorsAdd.email && (
+                  <p className="text-red-500 text-xs mt-1">{errorsAdd.email.message}</p>
+                )}
               </div>
 
               <div>
                 <label className="block text-xs sm:text-sm font-medium mb-1">Phone *</label>
                 <input
                   type="tel"
-                  value={formData.phone}
-                  onChange={(e) => setFormData(prev => ({ ...prev, phone: e.target.value }))}
+                  {...registerAdd('phone')}
                   className="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500 text-sm"
-                  required
                 />
+                {errorsAdd.phone && (
+                  <p className="text-red-500 text-xs mt-1">{errorsAdd.phone.message}</p>
+                )}
               </div>
 
               <div>
                 <label className="block text-xs sm:text-sm font-medium mb-1">Password *</label>
                 <input
                   type="password"
-                  value={formData.password}
-                  onChange={(e) => setFormData(prev => ({ ...prev, password: e.target.value }))}
+                  {...registerAdd('password')}
                   className="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500 text-sm"
-                  required
                 />
+                {errorsAdd.password && (
+                  <p className="text-red-500 text-xs mt-1">{errorsAdd.password.message}</p>
+                )}
+                <PasswordStrengthIndicator password={addPassword} />
               </div>
 
               <div>
                 <label className="block text-xs sm:text-sm font-medium mb-1">Role *</label>
                 <select
-                  value={formData.role}
-                  onChange={(e) => setFormData(prev => ({ ...prev, role: e.target.value }))}
+                  {...registerAdd('role')}
                   className="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500 text-sm"
-                  required
                 >
                   <option value="ENGINEER">Engineer</option>
                   {canCreateAdmin && <option value="ADMIN">Admin</option>}
                   {user?.role === 'HOST' && <option value="HOST">Host</option>}
                 </select>
+                {errorsAdd.role && (
+                  <p className="text-red-500 text-xs mt-1">{errorsAdd.role.message}</p>
+                )}
               </div>
 
-              {formData.role === 'HOST' && (
+              {watchAdd('role') === 'HOST' && (
                 <div>
                   <label className="block text-xs sm:text-sm font-medium mb-1">Secret Password *</label>
                   <input
                     type="password"
-                    value={formData.secretPassword}
-                    onChange={(e) => setFormData(prev => ({ ...prev, secretPassword: e.target.value }))}
+                    {...registerAdd('secretPassword')}
                     className="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500 text-sm"
                     placeholder="Enter secret password for HOST"
-                    required={formData.role === 'HOST'}
                   />
+                  {errorsAdd.secretPassword && (
+                    <p className="text-red-500 text-xs mt-1">{errorsAdd.secretPassword.message}</p>
+                  )}
                 </div>
               )}
 
@@ -674,15 +688,14 @@ const UserManagement = () => {
               </button>
             </div>
 
-            <form onSubmit={handleEditSubmit} className="space-y-4">
+            <form onSubmit={handleSubmitEdit(handleEditSubmit)} className="space-y-4">
               <div>
                 <label className="block text-xs sm:text-sm font-medium mb-1">Username *</label>
                 <input
                   type="text"
-                  value={editFormData.username}
+                  value={editingUser.username}
                   readOnly
                   className="w-full p-2 border rounded bg-gray-100 text-gray-600 cursor-not-allowed text-sm"
-                  required
                 />
               </div>
 
@@ -690,60 +703,67 @@ const UserManagement = () => {
                 <label className="block text-xs sm:text-sm font-medium mb-1">Email *</label>
                 <input
                   type="email"
-                  value={editFormData.email}
-                  onChange={(e) => setEditFormData(prev => ({ ...prev, email: e.target.value }))}
+                  {...registerEdit('email')}
                   className="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500 text-sm"
-                  required
                 />
+                {errorsEdit.email && (
+                  <p className="text-red-500 text-xs mt-1">{errorsEdit.email.message}</p>
+                )}
               </div>
 
               <div>
                 <label className="block text-xs sm:text-sm font-medium mb-1">Phone *</label>
                 <input
                   type="tel"
-                  value={editFormData.phone}
-                  onChange={(e) => setEditFormData(prev => ({ ...prev, phone: e.target.value }))}
+                  {...registerEdit('phone')}
                   className="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500 text-sm"
-                  required
                 />
+                {errorsEdit.phone && (
+                  <p className="text-red-500 text-xs mt-1">{errorsEdit.phone.message}</p>
+                )}
               </div>
 
               <div>
                 <label className="block text-xs sm:text-sm font-medium mb-1">New Password (leave blank to keep current)</label>
                 <input
                   type="password"
-                  value={editFormData.password}
-                  onChange={(e) => setEditFormData(prev => ({ ...prev, password: e.target.value }))}
+                  {...registerEdit('password')}
                   className="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500 text-sm"
                   placeholder="Enter new password or leave blank"
                 />
+                {errorsEdit.password && (
+                  <p className="text-red-500 text-xs mt-1">{errorsEdit.password.message}</p>
+                )}
+                {editPassword && <PasswordStrengthIndicator password={editPassword} />}
               </div>
 
               <div>
                 <label className="block text-xs sm:text-sm font-medium mb-1">Role *</label>
                 <select
-                  value={editFormData.role}
-                  onChange={(e) => setEditFormData(prev => ({ ...prev, role: e.target.value }))}
+                  {...registerEdit('role')}
                   className="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500 text-sm"
-                  required
                 >
                   <option value="ENGINEER">Engineer</option>
                   <option value="ADMIN">Admin</option>
                   <option value="HOST">Host</option>
                 </select>
+                {errorsEdit.role && (
+                  <p className="text-red-500 text-xs mt-1">{errorsEdit.role.message}</p>
+                )}
               </div>
 
-              {editFormData.role === 'HOST' && editingUser.role !== 'HOST' && (
+              {watchEdit('role') === 'HOST' && editingUser.role !== 'HOST' && (
                 <div>
                   <label className="block text-xs sm:text-sm font-medium mb-1">Secret Password *</label>
                   <input
                     type="password"
-                    value={editFormData.secretPassword}
-                    onChange={(e) => setEditFormData(prev => ({ ...prev, secretPassword: e.target.value }))}
+                    {...registerEdit('secretPassword')}
                     className="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500 text-sm"
                     placeholder="Enter secret password for HOST"
-                    required
                   />
+                  {errorsEdit.secretPassword && (
+                    <p className="text-red-500 text-xs mt-1">{errorsEdit.secretPassword.message}</p>
+                  )}
                 </div>
               )}
 

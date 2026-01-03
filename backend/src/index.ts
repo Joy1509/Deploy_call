@@ -58,7 +58,7 @@ app.get("/api/v1/health", async (req, res) => {
 });
 
 // API routes
-app.use('/api/v1', routes);
+app.use('/api', routes);
 
 // Error handling
 app.use('*', notFoundHandler);
