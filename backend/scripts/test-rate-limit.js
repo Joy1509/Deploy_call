@@ -1,9 +1,10 @@
 const axios = require('axios');
 
-const BASE_URL = process.env.BASE_URL || 'http://localhost:4000';
+const BASE_URL = process.env.BASE_URL || 'http://localhost:4000/api/v1';
 
 async function testRateLimiting() {
-    console.log('Testing Rate Limiting System...\n');
+    console.log('Testing Rate Limiting System...');
+    console.log(`Base URL: ${BASE_URL}\n`);
     
     try {
         // Test 1: Check initial status

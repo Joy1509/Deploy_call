@@ -46,7 +46,7 @@ app.use(cors({
 initializeSocket(httpServer);
 
 // Health check endpoint
-app.get("/health", async (req, res) => {
+app.get("/api/v1/health", async (req, res) => {
     try {
         const { prisma } = await import('./config/database');
         await prisma.$queryRaw`SELECT 1`;
@@ -58,7 +58,7 @@ app.get("/health", async (req, res) => {
 });
 
 // API routes
-app.use('/', routes);
+app.use('/api/v1', routes);
 
 // Error handling
 app.use('*', notFoundHandler);
@@ -93,7 +93,7 @@ async function startServer() {
         httpServer.listen(PORT, '0.0.0.0', () => {
             console.log(`Server running on port ${PORT}`);
             console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
-            console.log(`Health check: http://localhost:${PORT}/health`);
+            console.log(`Health check: http://localhost:${PORT}/api/v1/health`);
         });
     } catch (error) {
         console.error('Failed to start server:', error);

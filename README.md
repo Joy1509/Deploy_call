@@ -94,7 +94,7 @@ Deploy_call/
 
 3. Create `.env.local` (optional, for custom API URL):
    ```env
-   VITE_API_URL=http://localhost:4000
+   VITE_API_URL=http://localhost:4000/api/v1
    ```
 
 ## Running Locally
@@ -107,6 +107,7 @@ npm run dev
 ```
 
 Server runs at: `http://localhost:4000`
+API endpoints: `http://localhost:4000/api/v1/*`
 
 ### Terminal 2 - Frontend
 
@@ -123,28 +124,31 @@ After seeding, use the credentials you set in `SEED_HOST_USERNAME` and `SEED_HOS
 
 ## API Endpoints
 
+**Base URL:** `/api/v1`
+
 ### Authentication
-- `POST /auth/login` - Login with username and password
+- `POST /api/v1/auth/login` - Login with username and password
+- `GET /api/v1/auth/login-status` - Check login rate limiting status
 
 ### Users
-- `GET /users` - List all users (requires auth)
-- `POST /users` - Create a new user
-- `PUT /users/:id` - Update user role (HOST/ADMIN only)
+- `GET /api/v1/users` - List all users (requires auth)
+- `POST /api/v1/users` - Create a new user
+- `PUT /api/v1/users/:id` - Update user role (HOST/ADMIN only)
 
 ### Customers
-- `GET /customers` - List all customers
-- `POST /customers` - Create/update customer
-- `GET /customers/search` - Search by phone or email
+- `GET /api/v1/customers` - List all customers
+- `POST /api/v1/customers` - Create/update customer
+- `GET /api/v1/customers/search` - Search by phone or email
 
 ### Calls
-- `GET /calls` - List all calls
-- `POST /calls` - Create a new call
-- `PUT /calls/:id` - Update call details
-- `POST /calls/:id/assign` - Assign call to worker (HOST/ADMIN only)
-- `POST /calls/:id/complete` - Mark call as completed
+- `GET /api/v1/calls` - List all calls
+- `POST /api/v1/calls` - Create a new call
+- `PUT /api/v1/calls/:id` - Update call details
+- `POST /api/v1/calls/:id/assign` - Assign call to worker (HOST/ADMIN only)
+- `POST /api/v1/calls/:id/complete` - Mark call as completed
 
 ### Health
-- `GET /health` - Check API health
+- `GET /api/v1/health` - Check API health
 
 ## Environment Variables
 
@@ -168,7 +172,7 @@ When running `npm run seed`:
 When running `node scripts/test-api.js`:
 | Variable | Required | Description |
 |----------|----------|-------------|
-| `BASE_URL` | Yes | API endpoint URL (e.g., `http://localhost:4000`) |
+| `BASE_URL` | Yes | API endpoint URL (e.g., `http://localhost:4000/api/v1`) |
 | `TEST_API_USERNAME` | Yes | Test user username |
 | `TEST_API_PASSWORD` | Yes | Test user password |
 | `TEST_CALL_CUSTOMER_NAME` | Yes | Test call customer name |
@@ -182,7 +186,7 @@ When running `node scripts/test-api.js`:
 ### Frontend `.env.local` (Optional)
 | Variable | Required | Default | Description |
 |----------|----------|---------|-------------|
-| `VITE_API_URL` | No | `http://localhost:4000` (dev), `https://call-management-7hug.onrender.com` (prod) | Backend API URL |
+| `VITE_API_URL` | No | `http://localhost:4000/api/v1` (dev), `https://call-management-7hug.onrender.com/api/v1` (prod) | Backend API URL |
 
 ## Building for Production
 
