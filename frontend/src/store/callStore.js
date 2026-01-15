@@ -32,6 +32,12 @@ const useCallStore = create((set, get) => ({
   addCall: async (callData) => {
     try {
       const response = await apiClient.post('/calls', callData);
+      
+      // Immediately add to local state
+      set(state => ({
+        calls: [response.data, ...state.calls]
+      }));
+      
       toast.success('Call added successfully');
       return response.data;
     } catch (error) {
@@ -53,6 +59,12 @@ const useCallStore = create((set, get) => ({
   updateCall: async (callId, updates) => {
     try {
       const response = await apiClient.put(`/calls/${callId}`, updates);
+      
+      // Immediately update local state
+      set(state => ({
+        calls: state.calls.map(c => c.id === callId ? response.data : c)
+      }));
+      
       toast.success('Call updated successfully');
       return response.data;
     } catch (error) {
@@ -89,6 +101,12 @@ const useCallStore = create((set, get) => ({
         assignee,
         engineerRemark
       });
+      
+      // Immediately update local state
+      set(state => ({
+        calls: state.calls.map(c => c.id === callId ? response.data : c)
+      }));
+      
       toast.success('Call assigned successfully');
       return response.data;
     } catch (error) {
@@ -102,6 +120,12 @@ const useCallStore = create((set, get) => ({
       const response = await apiClient.post(`/calls/${callId}/complete`, {
         remark
       });
+      
+      // Immediately update local state
+      set(state => ({
+        calls: state.calls.map(c => c.id === callId ? response.data : c)
+      }));
+      
       toast.success('Call completed successfully');
       return response.data;
     } catch (error) {
@@ -116,6 +140,12 @@ const useCallStore = create((set, get) => ({
         callIds,
         secretPassword
       });
+      
+      // Immediately update local state
+      set(state => ({
+        calls: state.calls.filter(c => !callIds.includes(c.id))
+      }));
+      
       toast.success(`Successfully deleted ${response.data.deletedCount} calls`);
       return response.data;
     } catch (error) {
